@@ -1,126 +1,80 @@
-# FairVision AI
+# FairVision: Real-Time Bias-Mitigated Age Group Classification System
 
-An AI-powered web application for age group classification using a deep learning model (ResNet-50) built with PyTorch and deployed using Streamlit.
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg?style=flat-square&logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.25+-ff4b4b.svg?style=flat-square&logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-4.8+-green.svg?style=flat-square&logo=opencv&logoColor=white)](https://opencv.org/)
 
----
+FairVision is an end-to-end computer vision application designed to detect and mitigate demographic bias in automated age estimation models. Utilizing a deep **ResNet-50** architecture trained on the balanced **FairFace dataset**, this system provides accurate age bracket predictions while auditing and minimizing performance gaps across different racial phenotypes and gender cohorts. 
 
-## Live Demo
-
-Try the application here:  
-https://fairvision-ageclassifier-dynrx6uirepdtfcujj6mqm.streamlit.app/
-
----
-
-## Project Overview
-
-FairVision AI predicts the age group of a person from a face image using a trained deep learning model.  
-The model is based on a modified ResNet-50 architecture and classifies images into 9 age categories.
+This repository expands upon the core research notebook by introducing a production-ready, interactive **Streamlit Dashboard** featuring **real-time live webcam tracking** and face detection.
 
 ---
 
-## Age Categories
+## 🚀 Key Features
 
-- 0–2  
-- 3–9  
-- 10–19  
-- 20–29  
-- 30–39  
-- 40–49  
-- 50–59  
-- 60–69  
-- 70+  
+* **Dual-Inference Pipeline:**
+  * **Static Upload Mode:** Processes standard image files (`.jpg`, `.png`, `.jpeg`), rendering detailed confidence metrics and probability distribution charts.
+  * **Real-Time Live Camera Mode:** Direct webcam stream integration that maps and isolates faces dynamically using an automated Haar Cascade face detector.
+* **Deep Transfer Learning Backbone:** Powering predictions via a custom-adapted **ResNet-50** model, configured with custom heavy dropout structures to restrict overfitting.
+* **Algorithmic Bias Mitigation:** Built around a balanced training protocol optimizing cross-entropy loss with label smoothing to flatten disparity boundaries among protected attributes.
+* **Dynamic Analytics UI:** Fully integrated visualization tracking that breaks down the model's top candidates and probability outputs using a clean, custom dark-themed dashboard layout.
 
 ---
 
-## Features
+## 📊 Dataset Profile & Task Space
 
-- Upload face images (JPG, PNG, JPEG)
-- Real-time AI inference
-- Age group prediction
-- Confidence score display
-- Probability distribution visualization
-- Top-3 predictions
+The system is trained and audited against the **FairFace Dataset (0.25 tight crop configuration)**:
+* **Target Classification Objective:** 9 distinct age classes (`0-2`, `3-9`, `10-19`, `20-29`, `30-39`, `40-49`, `50-59`, `60-69`, `70+`).
+* **Protected Auditing Features:** Race (7 classes: *White, Black, Latino/Hispanic, East Asian, Southeast Asian, Indian, Middle Eastern*) and Gender (2 classes: *Male, Female*).
 
 ---
 
-## Tech Stack
+## 🛠️ Architecture and Preprocessing Pipeline
 
-- Python  
-- PyTorch  
-- TorchVision  
-- Streamlit  
-- Pillow  
-- gdown  
+The runtime image evaluation framework behaves through a structured multi-tier engineering assembly:
 
----
-
-## Model Architecture
-
-- Backbone: ResNet-50  
-- Fully Connected Layer customized for 9 classes  
-- Dropout (0.6) for regularization  
-- Output: Softmax probabilities  
+1. **Facial Boundary Isolation:** The webcam stream converts active frames to grayscale, applying OpenCV Haar Cascades to lock onto the regional face matrix.
+2. **Region-of-Interest (ROI) Extraction:** The locked frame crops out external neck and environmental background components, isolating a tight face crop matching the FairFace training scheme.
+3. **Tensor Standardization:** Crops are transformed into standardized input arrays:
+   * **Resizing Matrix:** Forced to a uniform resolution of $256 \times 256$ pixels.
+   * **Normalization Vector:** Scaled down using standard ImageNet parameters (`mean=[0.485, 0.456, 0.406]`, `std=[0.229, 0.224, 0.225]`).
+4. **Forward Pass Evaluation:** The tensor feeds into the model, processing individual class logits through a Softmax function to calculate true percentage confidence boundaries.
 
 ---
 
-## How to Run Locally
+## 💻 Getting Started
 
-### 1. Clone the repository
+### Prerequisites
+Ensure your machine runs Python 3.8+ and contains a functional built-in or external USB webcam device.
+
+### 1. Clone the Workspace
 ```bash
-git clone https://github.com/your-username/fairvision.git
-cd fairvision
-````
+git clone [https://github.com/ShashinduMalshan/FairVision-RealTime-Classifier.git](https://github.com/ShashinduMalshan/FairVision-RealTime-Classifier.git)
+cd FairVision-RealTime-Classifier
 
-### 2. Install dependencies
-
-```bash
-pip install -r requirements.txt
 ```
 
-### 3. Run the application
+### 2. Install Required Packages
+
+```bash
+pip install streamlit torch torchvision opencv-python pillow pandas numpy gdown
+
+```
+
+### 3. Run the Application
+
+Start the Streamlit application framework locally:
 
 ```bash
 streamlit run app.py
+
 ```
 
----
-
-## Model File Handling
-
-* The model file (`FairVision.pt`) is automatically downloaded from Google Drive on first run.
-* It is NOT included in the repository due to its large size.
+*Note: On your first startup, the system will automatically communicate with Google Drive storage using `gdown` to safely pull down your pre-trained weights (`FairVision.pt`) into your root directory.*
 
 ---
 
-## Project Structure
+## ⚖️ Fairness Disclaimer & Ethical Use
 
-```md
-FairVision_Web/
-│
-├── app.py
-├── requirements.txt
-├── README.md
-├── .gitignore
-└── FairVision.pt (auto-downloaded at runtime)
-```
-
----
-
-## Important Notes
-
-* Ensure internet connection for first run (model download required)
-* Do not commit `.pt` model files to GitHub
-* Streamlit Cloud handles dependencies via `requirements.txt`
-
----
-
-## Future Improvements
-
-* Add face detection before prediction
-* Integrate Grad-CAM explainability
-* Improve dataset fairness and balance
-* Deploy using Docker or HuggingFace Spaces
-
----
-
-# FairVision-RealTime-Classifier
+FairVision is built as an educational and auditing framework to study the variance of computer vision across distinct human phenotypes. Models output purely statistical evaluations. Predictions are probabilistic and are **not suitable** for deployment in unmonitored surveillance networks, biometric high-stakes legal profiling, or any secure verification contexts where prediction errors could inflict demographic harm.
