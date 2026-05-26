@@ -4,3 +4,9 @@ torchvision
 pillow
 gdown
 pandas
+numpy
+opencv-python
+streamlit-webrtc
+aiortc
+av
+ultralytics
