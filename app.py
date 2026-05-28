@@ -174,8 +174,8 @@ if pipeline_mode == "Live Webcam Stream Tracking":
             video_frame_callback=video_frame_callback,
             rtc_configuration=resilient_rtc_config,
             media_stream_constraints={"video": True, "audio": False},
-            async_processing=True,
-            send_warning=False
+            async_processing=True
+            # Removed send_warning parameter to fix TypeError
         )
     except AttributeError as e:
         if "'NoneType' object has no attribute 'is_alive'" in str(e):
