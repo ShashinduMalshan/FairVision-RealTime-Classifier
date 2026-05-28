@@ -16,6 +16,7 @@ GOOGLE_DRIVE_FILE_ID = "1v6YP_WYMgnsoGbY0MLtSGNDeQNr-HPDW"
 MODEL_PATH = "FairVision.pt"
 AGE_GROUPS = ["0-2", "3-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70+"]
 
+# Set page configuration safely at the structural root entrypoint
 st.set_page_config(page_title="FairVision Live Video", page_icon="👁️", layout="centered")
 
 # ── MINIMAL DARK THEME CSS ────────────────────────────────────────────────────
@@ -43,7 +44,6 @@ html, body, [class*="css"], .stApp, [data-testid="stAppViewContainer"],
 .fv-hr { border: none; border-top: 1px solid #18182a; margin: 1.5rem 0; }
 [data-testid="stSpinner"] p { color: #7c6fff !important; text-align: center; }
 
-/* Clean styling for headers */
 .section-title {
     font-family: 'Space Mono', monospace;
     font-size: 1.2rem;
@@ -65,9 +65,14 @@ class FairVisionResNet(nn.Module):
 
 @st.cache_resource
 def load_assets():
+    # Safely download model file within the runtime state wrapper
     if not os.path.exists(MODEL_PATH):
-        with st.spinner("Downloading model weights..."):
-            gdown.download(f"https://drive.google.com/uc?id={GOOGLE_DRIVE_FILE_ID}", MODEL_PATH, quiet=False)
+        try:
+            gdown.download(f"https://drive.google.com/uc?id={GOOGLE_DRIVE_FILE_ID}", MODEL_PATH, quiet=True)
+        except Exception:
+            # Fallback direct streaming download if query flags hit a cloud gateway redirect block
+            gdown.download(f"https://drive.google.com/uc?export=download&id={GOOGLE_DRIVE_FILE_ID}", MODEL_PATH, quiet=True)
+            
     model = FairVisionResNet(num_classes=9)
     ckpt = torch.load(MODEL_PATH, map_location="cpu")
     sd = ckpt.get("model_state_dict", ckpt) if isinstance(ckpt, dict) else ckpt
@@ -77,6 +82,7 @@ def load_assets():
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
     return model, face_cascade
 
+# Lazy-load assets safely within the current context execution pipeline
 model, face_cascade = load_assets()
 
 transform = transforms.Compose([
@@ -87,6 +93,8 @@ transform = transforms.Compose([
 
 # ── CENTRALIZED PROCESSING LOGIC ──────────────────────────────────────────────
 def process_frame(img):
+    if img is None:
+        return None
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(80, 80))
     
@@ -124,51 +132,54 @@ def process_frame(img):
             continue
     return img
 
-# ── STREAMING CALLBACK FUNCTION ───────────────────────────────────────────────
 def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
     img = frame.to_ndarray(format="bgr24")
     processed_img = process_frame(img)
     return av.VideoFrame.from_ndarray(processed_img, format="bgr24")
 
-# ── UI LAYOUT ─────────────────────────────────────────────────────────────────
-st.markdown("""
-<div class="fv-wordmark">Fair<em>Vision</em> Video</div>
-<div class="fv-tagline">Continuous Live Face Tracking & Age Inference</div>
-<div class="fv-hr"></div>
-""", unsafe_allow_html=True)
+# ── MAIN APPLICATION RUNNER WINDOW ────────────────────────────────────────────
+def main():
+    st.markdown("""
+    <div class="fv-wordmark">Fair<em>Vision</em> Video</div>
+    <div class="fv-tagline">Continuous Live Face Tracking & Age Inference Engine</div>
+    <div class="fv-hr"></div>
+    """, unsafe_allow_html=True)
 
-# SECTION 1: LIVE WEBCAM FEED (Clean Single-Window Layout)
-st.markdown('<div class="section-title">🎥 Live Video Tracking</div>', unsafe_allow_html=True)
+    # SECTION 1: LIVE WEBCAM FEED (Clean Single-Window Layout)
+    st.markdown('<div class="section-title">🎥 Live Video Tracking</div>', unsafe_allow_html=True)
 
-resilient_rtc_config = RTCConfiguration({
-    "iceServers": [
-        {"urls": ["stun:stun.l.google.com:19302"]},
-        {"urls": ["stun:stun1.l.google.com:19302"]},
-        {"urls": ["stun:stun2.l.google.com:19302"]},
-        {"urls": ["stun:global.stun.twilio.com:3478"]}
-    ]
-})
+    resilient_rtc_config = RTCConfiguration({
+        "iceServers": [
+            {"urls": ["stun:stun.l.google.com:19302"]},
+            {"urls": ["stun:stun1.l.google.com:19302"]},
+            {"urls": ["stun:stun2.l.google.com:19302"]},
+            {"urls": ["stun:global.stun.twilio.com:3478"]}
+        ]
+    })
 
-webrtc_streamer(
-    key="fairvision-live-stream",
-    video_frame_callback=video_frame_callback,
-    rtc_configuration=resilient_rtc_config,
-    media_stream_constraints={"video": True, "audio": False},
-    async_processing=True
-)
+    webrtc_streamer(
+        key="fairvision-live-stream",
+        video_frame_callback=video_frame_callback,
+        rtc_configuration=resilient_rtc_config,
+        media_stream_constraints={"video": True, "audio": False},
+        async_processing=True
+    )
 
-st.markdown('<div class="fv-hr"></div>', unsafe_allow_html=True)
+    st.markdown('<div class="fv-hr"></div>', unsafe_allow_html=True)
 
-# SECTION 2: STATIC IMAGE UPLOAD
-st.markdown('<div class="section-title">📁 Static File Upload Fallback</div>', unsafe_allow_html=True)
-uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+    # SECTION 2: STATIC IMAGE UPLOAD
+    st.markdown('<div class="section-title">📁 Static File Upload Fallback</div>', unsafe_allow_html=True)
+    uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
 
-if uploaded_file is not None:
-    file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
-    opencv_img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-    
-    with st.spinner("Processing image matrix..."):
-        evaluated_img = process_frame(opencv_img)
+    if uploaded_file is not None:
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        opencv_img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
         
-    final_rgb_display = cv2.cvtColor(evaluated_img, cv2.COLOR_BGR2RGB)
-    st.image(final_rgb_display, caption="FairVision Audited Result Frame", use_container_width=True)
+        with st.spinner("Processing image matrix..."):
+            evaluated_img = process_frame(opencv_img)
+            
+        final_rgb_display = cv2.cvtColor(evaluated_img, cv2.COLOR_BGR2RGB)
+        st.image(final_rgb_display, caption="FairVision Audited Result Frame", use_container_width=True)
+
+if __name__ == "__main__":
+    main()

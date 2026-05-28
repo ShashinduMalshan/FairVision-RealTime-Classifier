@@ -3,7 +3,7 @@ title: FairVision RealTime Classifier
 emoji: 👁️
 colorFrom: indigo
 colorTo: purple
-sdk: gradio
+sdk: streamlit
 python_version: "3.11"
 app_file: app.py
 pinned: false
