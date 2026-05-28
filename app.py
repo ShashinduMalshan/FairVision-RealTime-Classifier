@@ -8,8 +8,6 @@ import gdown
 import os
 import cv2
 import numpy as np
-from streamlit_webrtc import webrtc_streamer, RTCConfiguration
-import av
 
 # ── CONFIGURATION & ATTRIBUTES ────────────────────────────────────────────────
 GOOGLE_DRIVE_FILE_ID = "1v6YP_WYMgnsoGbY0MLtSGNDeQNr-HPDW"
@@ -43,8 +41,8 @@ html, body, [class*="css"], .stApp, [data-testid="stAppViewContainer"],
 .fv-hr { border: none; border-top: 1px solid #18182a; margin: 0 0 1.5rem; }
 [data-testid="stSpinner"] p { color: #7c6fff !important; text-align: center; }
 
-/* Customizing the mode selector look */
-div[data-testid="stRadio"] label {
+/* Customizing input element fonts */
+div[data-testid="stRadio"] label, div[data-testid="stFileUploader"] label {
     font-family: 'Space Mono', monospace !important;
     color: #e8e7f8 !important;
 }
@@ -70,42 +68,35 @@ def load_fairvision_assets():
         with st.spinner("Downloading model weights from secure storage..."):
             gdown.download(f"https://drive.google.com/uc?id={GOOGLE_DRIVE_FILE_ID}", MODEL_PATH, quiet=False)
             
-    # Initialize network architecture
     model = FairVisionResNet(num_classes=9)
     checkpoint = torch.load(MODEL_PATH, map_location="cpu")
     
-    # Safely unpack model weights dictionary
     state_dict = checkpoint.get("model_state_dict", checkpoint) if isinstance(checkpoint, dict) else checkpoint
     model.load_state_dict({k.replace("module.", ""): v for k, v in state_dict.items()}, strict=False)
     model.eval()
     
-    # Load optimized localized face classifier matrix
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
     return model, face_cascade
 
 model, face_cascade = load_fairvision_assets()
 
-# Standardized Torchvision Tensor Transforms matching dataset configuration
 transform = transforms.Compose([
     transforms.Resize((256, 256)),
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-# ── CENTRALIZED INFERENCE ENGINE LOOKUP ───────────────────────────────────────
 def process_cv2_frame(img):
-    """Processes an incoming NumPy BGR matrix image, tracks faces, and overlays inference results."""
+    """Processes an incoming NumPy BGR image matrix, tracks faces, and overlays inference results."""
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(80, 80))
     
     for (x, y, w, h) in faces:
         try:
-            # ROI Isolation
             crop_bgr = img[y:y+h, x:x+w]
             crop_rgb = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2RGB)
             pil_crop = Image.fromarray(crop_rgb)
             
-            # Predict
             with torch.no_grad():
                 tensor_img = transform(pil_crop).unsqueeze(0)
                 outputs = model(tensor_img)
@@ -124,7 +115,6 @@ def process_cv2_frame(img):
                 accent_color = (100, 100, 230)  # BGR Warning Crimson
                 font_scale = 0.45
             
-            # Rendering localized bounding UI frames
             cv2.rectangle(img, (x, y), (x + w, y + h), accent_color, 3)
             cv2.rectangle(img, (x, y - 30), (x + w, y), accent_color, -1)
             cv2.putText(
@@ -135,12 +125,6 @@ def process_cv2_frame(img):
             continue
     return img
 
-# ── ASYNCHRONOUS WEBRTC STREAMING HOOK ────────────────────────────────────────
-def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
-    img = frame.to_ndarray(format="bgr24")
-    processed_img = process_cv2_frame(img)
-    return av.VideoFrame.from_ndarray(processed_img, format="bgr24")
-
 # ── USER INTERFACE DISPLAY ENTRYPOINT ─────────────────────────────────────────
 st.markdown("""
 <div class="fv-wordmark">Fair<em>Vision</em> Dashboard</div>
@@ -148,44 +132,27 @@ st.markdown("""
 <div class="fv-hr"></div>
 """, unsafe_allow_html=True)
 
-# Application Navigation Mode
 pipeline_mode = st.radio(
     "Select System Input Pipeline Source:",
-    ["Live Webcam Stream Tracking", "Static Document Image Upload"]
+    ["Use Webcam Snapshot (Firewall Safe)", "Upload Static File Frame"]
 )
 
-if pipeline_mode == "Live Webcam Stream Tracking":
-    st.info("💡 Grant browser webcam permissions when prompted to initiate the live tracking loop.")
+if pipeline_mode == "Use Webcam Snapshot (Firewall Safe)":
+    st.markdown("### 📸 Live Webcam Verification")
+    cam_image = st.camera_input("Capture an image to pass through the model matrix")
     
-    # Highly robust array of public STUN endpoints
-    resilient_rtc_config = RTCConfiguration({
-        "iceServers": [
-            {"urls": ["stun:stun.l.google.com:19302"]},
-            {"urls": ["stun:stun1.l.google.com:19302"]},
-            {"urls": ["stun:stun2.l.google.com:19302"]},
-            {"urls": ["stun:global.stun.twilio.com:3478"]}
-        ]
-    })
-    
-    # Wrap in a try-except block to catch the library's internal thread lifecycle cleanup bug safely
-    try:
-        webrtc_streamer(
-            key="fairvision-runtime-stream",
-            video_frame_callback=video_frame_callback,
-            rtc_configuration=resilient_rtc_config,
-            media_stream_constraints={"video": True, "audio": False},
-            async_processing=True
-            # Removed send_warning parameter to fix TypeError
-        )
-    except AttributeError as e:
-        if "'NoneType' object has no attribute 'is_alive'" in str(e):
-            st.warning("WebRTC stream re-initializing...")
-            st.rerun()
-        else:
-            raise e
+    if cam_image is not None:
+        bytes_data = cam_image.getvalue()
+        static_cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
+        
+        with st.spinner("Executing model forward pass metrics..."):
+            evaluated_img = process_cv2_frame(static_cv2_img)
+            
+        final_rgb_display = cv2.cvtColor(evaluated_img, cv2.COLOR_BGR2RGB)
+        st.image(final_rgb_display, caption="FairVision Audited Result Frame", use_container_width=True)
 
 else:
-    st.markdown("### Upload Target Image Frame")
+    st.markdown("### 📁 Upload Target Image Frame")
     uploaded_image = st.file_uploader("Drop a face image to pass through the model matrix:", type=["jpg", "jpeg", "png"])
     
     if uploaded_image is not None:
