@@ -148,7 +148,7 @@ st.markdown("""
 <div class="fv-hr"></div>
 """, unsafe_allow_html=True)
 
-# Application Navigation Mode (Ensures operation regardless of restrictive enterprise firewalls)
+# Application Navigation Mode
 pipeline_mode = st.radio(
     "Select System Input Pipeline Source:",
     ["Live Webcam Stream Tracking", "Static Document Image Upload"]
@@ -157,35 +157,43 @@ pipeline_mode = st.radio(
 if pipeline_mode == "Live Webcam Stream Tracking":
     st.info("💡 Grant browser webcam permissions when prompted to initiate the live tracking loop.")
     
-    # Highly robust array of public STUN endpoints to handle secure proxy routing
+    # Highly robust array of public STUN endpoints
     resilient_rtc_config = RTCConfiguration({
         "iceServers": [
             {"urls": ["stun:stun.l.google.com:19302"]},
             {"urls": ["stun:stun1.l.google.com:19302"]},
             {"urls": ["stun:stun2.l.google.com:19302"]},
-            {"urls": ["stun:global.stun.twilio.com:3478"]}        ]
+            {"urls": ["stun:global.stun.twilio.com:3478"]}
+        ]
     })
     
-    webrtc_streamer(
-        key="fairvision-runtime-stream",
-        video_frame_callback=video_frame_callback,
-        rtc_configuration=resilient_rtc_config,
-        media_stream_constraints={"video": True, "audio": False},
-        async_processing=True
-    )
+    # Wrap in a try-except block to catch the library's internal thread lifecycle cleanup bug safely
+    try:
+        webrtc_streamer(
+            key="fairvision-runtime-stream",
+            video_frame_callback=video_frame_callback,
+            rtc_configuration=resilient_rtc_config,
+            media_stream_constraints={"video": True, "audio": False},
+            async_processing=True,
+            send_warning=False
+        )
+    except AttributeError as e:
+        if "'NoneType' object has no attribute 'is_alive'" in str(e):
+            st.warning("WebRTC stream re-initializing...")
+            st.rerun()
+        else:
+            raise e
 
 else:
     st.markdown("### Upload Target Image Frame")
     uploaded_image = st.file_uploader("Drop a face image to pass through the model matrix:", type=["jpg", "jpeg", "png"])
     
     if uploaded_image is not None:
-        # Convert static file data array to standard processing array format
         raw_bytes = np.asarray(bytearray(uploaded_image.read()), dtype=np.uint8)
         static_cv2_img = cv2.imdecode(raw_bytes, cv2.IMREAD_COLOR)
         
         with st.spinner("Executing model forward pass metrics..."):
             evaluated_img = process_cv2_frame(static_cv2_img)
             
-        # Swap array channels back to RGB for rendering inside Streamlit's interface properly
         final_rgb_display = cv2.cvtColor(evaluated_img, cv2.COLOR_BGR2RGB)
         st.image(final_rgb_display, caption="FairVision Audited Result Frame", use_container_width=True)
