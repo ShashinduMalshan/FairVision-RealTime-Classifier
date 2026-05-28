@@ -6,7 +6,8 @@ gdown
 pandas
 numpy
 opencv-python-headless
-streamlit-webrtc
-aiortc
-av
 ultralytics
+
+streamlit-webrtc==0.47.1
+aiortc==1.6.0
+av==11.0.0
