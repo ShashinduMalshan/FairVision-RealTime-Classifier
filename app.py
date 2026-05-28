@@ -8,12 +8,12 @@ import gdown
 import os
 import cv2
 import numpy as np
-from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, RTCConfiguration
+import av  # Crucial for the modern WebRTC video processing framework
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 GOOGLE_DRIVE_FILE_ID = "1v6YP_WYMgnsoGbY0MLtSGNDeQNr-HPDW"
 MODEL_PATH = "FairVision.pt"
-# Changed special en-dashes (–) to standard hyphens (-) so cv2.putText can render them without showing '??'
 AGE_GROUPS = ["0-2", "3-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70+"]
 
 st.set_page_config(page_title="FairVision Live Video", page_icon="👁️", layout="centered")
@@ -78,14 +78,14 @@ transform = transforms.Compose([
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-# ── REAL-TIME VIDEO PROCESSING ENGINE ─────────────────────────────────────────
-class VideoInferenceTransformer(VideoTransformerBase):
+# ── REAL-TIME VIDEO PROCESSING ENGINE (UPDATED TO MODERN WEBRTC) ──────────────
+class VideoInferenceProcessor(VideoProcessorBase):
     def __init__(self):
         self.model = model
         self.face_cascade = face_cascade
 
-    def transform(self, frame):
-        # Convert frame to numpy array (OpenCV format: BGR)
+    def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
+        # Convert modern PyAV frame to numpy array (OpenCV format: BGR)
         img = frame.to_ndarray(format="bgr24")
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         
@@ -119,7 +119,7 @@ class VideoInferenceTransformer(VideoTransformerBase):
                 else:
                     text_str = "Can't detect you, come closer"
                     accent_color = (100, 100, 230)  # BGR Warning Light Red/Coral
-                    font_scale = 0.45  # Slightly smaller to fit the longer message above the bounding box
+                    font_scale = 0.45 
                 
                 # 5. Draw bounding box and label overlay on frame
                 cv2.rectangle(img, (x, y), (x + w, y + h), accent_color, 3)
@@ -131,10 +131,11 @@ class VideoInferenceTransformer(VideoTransformerBase):
                     cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), 2, cv2.LINE_AA
                 )
             except Exception as e:
-                # Fallback to keep the video running if a frame sizing glitch occurs
+                st.error(f"Error occurred while processing frame: {e}")
                 continue
                 
-        return img
+        # Return the modified frame wrapped back into a PyAV VideoFrame object
+        return av.VideoFrame.from_ndarray(img, format="bgr24")
 
 # ── UI LAYOUT ─────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -148,7 +149,7 @@ rtc_config = RTCConfiguration({"iceServers": [{"urls": ["stun:stun.l.google.com:
 
 webrtc_streamer(
     key="fairvision-live-stream",
-    video_transformer_factory=VideoInferenceTransformer,
+    video_processor_factory=VideoInferenceProcessor,  # Updated factory naming standard
     rtc_configuration=rtc_config,
     media_stream_constraints={"video": True, "audio": False},
 )
