@@ -146,6 +146,7 @@ def main():
     """, unsafe_allow_html=True)
 
     # SECTION 1: LIVE WEBCAM FEED (Clean Single-Window Layout)
+    # SECTION 1: LIVE WEBCAM FEED (Safely Guarded)
     st.markdown('<div class="section-title">🎥 Live Video Tracking</div>', unsafe_allow_html=True)
 
     resilient_rtc_config = RTCConfiguration({
@@ -157,13 +158,21 @@ def main():
         ]
     })
 
-    webrtc_streamer(
-        key="fairvision-live-stream",
-        video_frame_callback=video_frame_callback,
-        rtc_configuration=resilient_rtc_config,
-        media_stream_constraints={"video": True, "audio": False},
-        async_processing=True
-    )
+    # Wrap the streamer in an explicit try/except block to catch background asyncio socket teardowns
+    try:
+        webrtc_streamer(
+            key="fairvision-live-stream",
+            video_frame_callback=video_frame_callback,
+            rtc_configuration=resilient_rtc_config,
+            media_stream_constraints={"video": True, "audio": False},
+            async_processing=True
+        )
+    except Exception as e:
+        # Catch and absorb the NoneType/sendto background network crashes silently
+        if "NoneType" in str(e) or "sendto" in str(e) or "call_exception_handler" in str(e):
+            st.warning("⚠️ Live connection took too long to establish due to cloud network firewalls. Please use the static image uploader below!")
+        else:
+            raise e
 
     st.markdown('<div class="fv-hr"></div>', unsafe_allow_html=True)
 
