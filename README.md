@@ -1,3 +1,15 @@
+---
+title: FairVision RealTime Classifier
+emoji: 👁️
+colorFrom: indigo
+colorTo: purple
+sdk: streamlit
+python_version: "3.11"
+app_file: app.py
+pinned: false
+license: mit
+---
+
 # FairVision: Real-Time Bias-Mitigated Age Group Classification System
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
