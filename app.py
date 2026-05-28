@@ -98,7 +98,9 @@ def process_core_frame(frame):
     return frame
 
 # ── GRADIO INTERFACE LAYOUT ───────────────────────────────────────────────────
-with gr.Blocks(css="footer {visibility: hidden !important;}") as demo:
+# ── GRADIO INTERFACE LAYOUT (STRICT GRADIO 6.0 ARCHITECTURE) ──────────────────
+# Moved css parameter to launch() to eliminate the startup UserWarning
+with gr.Blocks() as demo:
     gr.Markdown("<h1 style='text-align: center; color: #7c6fff;'>FairVision Real-Time Engine</h1>")
     gr.Markdown("<p style='text-align: center;'>Bias-Mitigated Age Estimation Engine • ResNet-50 Implementation</p>")
     
@@ -106,15 +108,13 @@ with gr.Blocks(css="footer {visibility: hidden !important;}") as demo:
         # ── TAB 1: LIVE WEBCAM STREAMING ──────────────────────────────────────
         with gr.TabItem("🎥 Live Continuous Tracking"):
             with gr.Row():
-                # To clean up the interface, we can remove additional recording UI items 
-                # by explicitly setting the input component properties
+                # Removed 'show_download_button' to resolve the TypeError crash
                 webcam_input = gr.Image(
                     sources=["webcam"], 
                     streaming=True, 
-                    label="Live Input Feed", 
-                    show_download_button=False
+                    label="Live Input Feed"
                 )
-                video_output = gr.Image(label="Model Real-Time Output", show_download_button=False)
+                video_output = gr.Image(label="Model Real-Time Output")
                 
             webcam_input.stream(
                 fn=process_core_frame, 
@@ -138,4 +138,5 @@ with gr.Blocks(css="footer {visibility: hidden !important;}") as demo:
             )
 
 if __name__ == "__main__":
-    demo.launch()
+    # Custom global CSS styles are now cleanly executed here
+    demo.launch(css="footer {visibility: hidden !important;}")
