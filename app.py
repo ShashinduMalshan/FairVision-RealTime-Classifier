@@ -49,12 +49,12 @@ transform = transforms.Compose([
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
-# ── CORE INFERENCE PIPELINE FOR STREAMING ─────────────────────────────────────
-def predict_stream(frame):
+# ── CENTRALIZED INFERENCE ENGINE LOOKUP ───────────────────────────────────────
+def process_core_frame(frame):
     if frame is None:
         return None
         
-    # Convert incoming streaming RGB image to BGR NumPy array for OpenCV
+    # Convert incoming PIL or NumPy RGB image to BGR array for OpenCV tracking
     img = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     
@@ -85,7 +85,7 @@ def predict_stream(frame):
                 text_str = "Position face closer"
                 accent_color = (230, 100, 100)  # RGB Warning Coral
             
-            # Draw tracking visualization boxes (Note: Gradio expects RGB output)
+            # Draw bounding box and prediction text (Gradio outputs natively in RGB format)
             cv2.rectangle(frame, (x, y), (x + w, y + h), accent_color, 4)
             cv2.rectangle(frame, (x, y - 35), (x + w, y), accent_color, -1)
             cv2.putText(
@@ -97,24 +97,45 @@ def predict_stream(frame):
             
     return frame
 
-# ── GRADIO INTERFACE LAYOUT (GRADIO 6.0 COMPATIBLE) ───────────────────────────
+# ── GRADIO INTERFACE LAYOUT ───────────────────────────────────────────────────
 with gr.Blocks(css="footer {visibility: hidden !important;}") as demo:
     gr.Markdown("<h1 style='text-align: center; color: #7c6fff;'>FairVision Real-Time Engine</h1>")
-    gr.Markdown("<p style='text-align: center;'>Continuous Live Face Tracking & Age Inference via Encrypted WebSockets.</p>")
+    gr.Markdown("<p style='text-align: center;'>Bias-Mitigated Age Estimation Engine • ResNet-50 Implementation</p>")
     
-    with gr.Row():
-        # streaming=True creates a continuous processing event loop
-        webcam_input = gr.Image(sources=["webcam"], streaming=True, label="Live Input Feed")
-        video_output = gr.Image(label="Model Analytics Output")
-        
-    # stream_every=0.1 means frames are evaluated continuously 10 times a second
-    webcam_input.stream(
-        fn=predict_stream, 
-        inputs=webcam_input, 
-        outputs=video_output, 
-        stream_every=0.1,
-        concurrency_limit=5
-    )
+    with gr.Tabs():
+        # ── TAB 1: LIVE WEBCAM STREAMING ──────────────────────────────────────
+        with gr.TabItem("🎥 Live Continuous Tracking"):
+            with gr.Row():
+                # To clean up the interface, we can remove additional recording UI items 
+                # by explicitly setting the input component properties
+                webcam_input = gr.Image(
+                    sources=["webcam"], 
+                    streaming=True, 
+                    label="Live Input Feed", 
+                    show_download_button=False
+                )
+                video_output = gr.Image(label="Model Real-Time Output", show_download_button=False)
+                
+            webcam_input.stream(
+                fn=process_core_frame, 
+                inputs=webcam_input, 
+                outputs=video_output, 
+                stream_every=0.1,
+                concurrency_limit=5
+            )
+            
+        # ── TAB 2: STATIC FILE UPLOAD ─────────────────────────────────────────
+        with gr.TabItem("📁 Static File Upload"):
+            with gr.Row():
+                static_input = gr.Image(type="numpy", label="Upload Photo (JPG / PNG)")
+                static_output = gr.Image(label="Analyzed Result Output")
+                
+            # Triggers a processing sweep immediately when an image is loaded or updated
+            static_input.change(
+                fn=process_core_frame,
+                inputs=static_input,
+                outputs=static_output
+            )
 
 if __name__ == "__main__":
     demo.launch()
