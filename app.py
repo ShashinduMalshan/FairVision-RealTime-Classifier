@@ -137,7 +137,7 @@ def video_frame_callback(frame: av.VideoFrame) -> av.VideoFrame:
     processed_img = process_frame(img)
     return av.VideoFrame.from_ndarray(processed_img, format="bgr24")
 
-# ── MAIN APPLICATION RUNNER WINDOW ────────────────────────────────────────────
+# ── MAIN APPLICATION RUNNER WINDOW ────────────────────────────────────────────# ── MAIN APPLICATION RUNNER WINDOW ────────────────────────────────────────────
 def main():
     st.markdown("""
     <div class="fv-wordmark">Fair<em>Vision</em> Video</div>
@@ -145,9 +145,25 @@ def main():
     <div class="fv-hr"></div>
     """, unsafe_allow_html=True)
 
-    # SECTION 1: LIVE WEBCAM FEED (Clean Single-Window Layout)
-    # SECTION 1: LIVE WEBCAM FEED (Safely Guarded)
-    st.markdown('<div class="section-title">🎥 Live Video Tracking</div>', unsafe_allow_html=True)
+    # Move Static Upload to Section 1 so it is the first thing people use online!
+    st.markdown('<div class="section-title">📁 Mode 1: Instant File Upload (Cloud Fast-Track)</div>', unsafe_allow_html=True)
+    uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+
+    if uploaded_file is not None:
+        file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
+        opencv_img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        
+        with st.spinner("Processing image matrix..."):
+            evaluated_img = process_frame(opencv_img)
+            
+        final_rgb_display = cv2.cvtColor(evaluated_img, cv2.COLOR_BGR2RGB)
+        st.image(final_rgb_display, caption="FairVision Audited Result Frame", use_container_width=True)
+
+    st.markdown('<div class="fv-hr"></div>', unsafe_allow_html=True)
+
+    # Move Live Webcam to Section 2
+    st.markdown('<div class="section-title">🎥 Mode 2: Live Video Tracking (Runs on Localhost)</div>', unsafe_allow_html=True)
+    st.info("💡 Note: Cloud firewalls block live media streaming protocols. To see real-time webcam video tracking, run this project locally on your machine!")
 
     resilient_rtc_config = RTCConfiguration({
         "iceServers": [
@@ -158,7 +174,6 @@ def main():
         ]
     })
 
-    # Wrap the streamer in an explicit try/except block to catch background asyncio socket teardowns
     try:
         webrtc_streamer(
             key="fairvision-live-stream",
@@ -168,12 +183,10 @@ def main():
             async_processing=True
         )
     except Exception as e:
-        # Catch and absorb the NoneType/sendto background network crashes silently
-        if "NoneType" in str(e) or "sendto" in str(e) or "call_exception_handler" in str(e):
-            st.warning("⚠️ Live connection took too long to establish due to cloud network firewalls. Please use the static image uploader below!")
+        if "NoneType" in str(e) or "sendto" in str(e) or "is_alive" in str(e):
+            st.warning("WebRTC session closed. Please use Mode 1 above for cloud validation.")
         else:
             raise e
-
     st.markdown('<div class="fv-hr"></div>', unsafe_allow_html=True)
 
     # SECTION 2: STATIC IMAGE UPLOAD
