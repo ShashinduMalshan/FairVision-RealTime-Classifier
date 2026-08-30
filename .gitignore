@@ -1,0 +1,30 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Model Checkpoints (Auto-downloaded by app.py from Google Drive)
+*.pt
+*.pth
+*.onnx
+*.bin
+
+# Environment & IDE
+.env
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Temporary outputs
+*.png.tmp
+annotated_output/
