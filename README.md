@@ -13,6 +13,10 @@
 
 ### 🚀 **Live Demo:** [https://fairvision-realtime-classifier.streamlit.app/](https://fairvision-realtime-classifier.streamlit.app/)
 
+<br/>
+
+<video src="assets/fairvision_demo.webm" width="95%" controls autoplay loop muted playsinline></video>
+
 </div>
 
 ---
