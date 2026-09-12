@@ -1008,10 +1008,10 @@ with tab_demos:
     """, unsafe_allow_html=True)
     
     DEMO_SHOWCASE_PRESETS = [
-        {"name": "Child (3-9)", "file": "3-9.jpg"},
+        {"name": "Child (0-2)", "file": "3-9.jpg"},
         {"name": "Young Adult (20-29)", "file": "20-29.jpg"},
-        {"name": "Middle Age (40-49)", "file": "40-49.jpg"},
-        {"name": "Senior (70+)", "file": "70+.jpeg"}
+        {"name": "Middle Age (50-59)", "file": "40-49.jpg"},
+        {"name": "Senior (60-69)", "file": "70+.jpeg"}
     ]
 
     def load_showcase_portrait(preset_info, target_size=(300, 300)):
