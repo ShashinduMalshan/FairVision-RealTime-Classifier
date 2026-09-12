@@ -15,7 +15,7 @@
 
 <br/>
 
-<video src="assets/fairvision_demo.webm" width="95%" controls autoplay loop muted playsinline></video>
+<img src="assets/fairvision_demo.gif" alt="FairVision AI Live Demo" width="100%" />
 
 </div>
 
