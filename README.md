@@ -1,3 +1,5 @@
+<div align="center">
+
 # 👁️ FairVision: Real-Time Bias-Mitigated Age Group Classifier
 
 ### *Continuous Live Facial Tracking, Multi-Subject Inspection & Algorithmic Fairness Auditing*
