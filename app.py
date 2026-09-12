@@ -1014,7 +1014,7 @@ with tab_demos:
         {"name": "Senior (70+)", "file": "70+.jpeg"}
     ]
 
-    def load_showcase_portrait(preset_info):
+    def load_showcase_portrait(preset_info, target_size=(300, 300)):
         search_dirs = ["Showcase_Img", "assets/Showcase_Img", "assets"]
         file_name = preset_info["file"]
         for d in search_dirs:
@@ -1022,12 +1022,18 @@ with tab_demos:
             if os.path.exists(p):
                 img = cv2.imread(p)
                 if img is not None:
-                    return img
+                    # Smart center-crop to square preserving natural facial geometry
+                    h, w = img.shape[:2]
+                    min_dim = min(h, w)
+                    start_x = (w - min_dim) // 2
+                    start_y = (h - min_dim) // 2
+                    cropped = img[start_y:start_y + min_dim, start_x:start_x + min_dim]
+                    return cv2.resize(cropped, target_size, interpolation=cv2.INTER_AREA)
         
         # Fallback placeholder if image not found
-        canvas = np.zeros((300, 300, 3), dtype=np.uint8)
+        canvas = np.zeros((*target_size, 3), dtype=np.uint8)
         canvas[:] = (24, 28, 42)
-        cv2.putText(canvas, preset_info["name"], (25, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
+        cv2.putText(canvas, preset_info["name"], (25, target_size[1] // 2), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
         return canvas
 
     cols = st.columns(len(DEMO_SHOWCASE_PRESETS))
