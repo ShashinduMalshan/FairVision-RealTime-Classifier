@@ -1007,54 +1007,36 @@ with tab_demos:
     </div>
     """, unsafe_allow_html=True)
     
-    # Helper to generate stylized demographic portraits using PIL/OpenCV drawing
-    def generate_demo_portrait(profile_name):
-        canvas = np.zeros((300, 300, 3), dtype=np.uint8)
-        canvas[:] = (24, 28, 42) # Dark background
+    DEMO_SHOWCASE_PRESETS = [
+        {"name": "Child (3-9)", "file": "3-9.jpg"},
+        {"name": "Young Adult (20-29)", "file": "20-29.jpg"},
+        {"name": "Middle Age (40-49)", "file": "40-49.jpg"},
+        {"name": "Senior (70+)", "file": "70+.jpeg"}
+    ]
+
+    def load_showcase_portrait(preset_info):
+        search_dirs = ["Showcase_Img", "assets/Showcase_Img", "assets"]
+        file_name = preset_info["file"]
+        for d in search_dirs:
+            p = os.path.join(d, file_name)
+            if os.path.exists(p):
+                img = cv2.imread(p)
+                if img is not None:
+                    return img
         
-        if profile_name == "Child (3-9)":
-            center = (150, 150)
-            cv2.circle(canvas, center, 85, (190, 205, 240), -1) # Face skin
-            cv2.circle(canvas, (120, 135), 10, (40, 40, 40), -1) # Eye L
-            cv2.circle(canvas, (180, 135), 10, (40, 40, 40), -1) # Eye R
-            cv2.ellipse(canvas, (150, 185), (35, 20), 0, 0, 180, (40, 40, 40), 3) # Smile
-            cv2.putText(canvas, "Child Demo (3-9)", (45, 275), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
-        elif profile_name == "Young Adult (20-29)":
-            center = (150, 150)
-            cv2.circle(canvas, center, 90, (170, 195, 235), -1)
-            cv2.circle(canvas, (115, 135), 12, (50, 50, 50), -1)
-            cv2.circle(canvas, (185, 135), 12, (50, 50, 50), -1)
-            cv2.line(canvas, (125, 185), (175, 185), (50, 50, 50), 4)
-            cv2.putText(canvas, "Adult Demo (20-29)", (35, 275), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
-        elif profile_name == "Middle Age (40-49)":
-            center = (150, 150)
-            cv2.circle(canvas, center, 90, (160, 185, 225), -1)
-            cv2.circle(canvas, (115, 135), 11, (50, 50, 50), -1)
-            cv2.circle(canvas, (185, 135), 11, (50, 50, 50), -1)
-            cv2.line(canvas, (100, 115), (130, 120), (50, 50, 50), 3) # Brow L
-            cv2.line(canvas, (200, 115), (170, 120), (50, 50, 50), 3) # Brow R
-            cv2.line(canvas, (130, 185), (170, 185), (50, 50, 50), 3)
-            cv2.putText(canvas, "Mid-Age Demo (40-49)", (25, 275), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
-        else: # Senior (70+)
-            center = (150, 150)
-            cv2.circle(canvas, center, 90, (150, 175, 215), -1)
-            cv2.circle(canvas, (115, 135), 9, (60, 60, 60), -1)
-            cv2.circle(canvas, (185, 135), 9, (60, 60, 60), -1)
-            cv2.line(canvas, (90, 105), (210, 105), (120, 140, 180), 2)
-            cv2.line(canvas, (95, 115), (205, 115), (120, 140, 180), 2)
-            cv2.ellipse(canvas, (150, 195), (25, 10), 0, 180, 360, (60, 60, 60), 3)
-            cv2.putText(canvas, "Senior Demo (70+)", (35, 275), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
+        # Fallback placeholder if image not found
+        canvas = np.zeros((300, 300, 3), dtype=np.uint8)
+        canvas[:] = (24, 28, 42)
+        cv2.putText(canvas, preset_info["name"], (25, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 2)
         return canvas
 
-    demo_names = ["Child (3-9)", "Young Adult (20-29)", "Middle Age (40-49)", "Senior (70+)"]
-    cols = st.columns(4)
-    
+    cols = st.columns(len(DEMO_SHOWCASE_PRESETS))
     selected_demo = None
-    for i, name in enumerate(demo_names):
+    for i, preset in enumerate(DEMO_SHOWCASE_PRESETS):
         with cols[i]:
-            demo_img = generate_demo_portrait(name)
-            st.image(cv2.cvtColor(demo_img, cv2.COLOR_BGR2RGB), use_container_width=True)
-            if st.button(f"⚡ Inspect {name.split()[0]}", key=f"demo_btn_{i}", use_container_width=True):
+            demo_img = load_showcase_portrait(preset)
+            st.image(cv2.cvtColor(demo_img, cv2.COLOR_BGR2RGB), caption=preset["name"], use_container_width=True)
+            if st.button(f"⚡ Inspect {preset['name'].split()[0]}", key=f"demo_btn_{i}", use_container_width=True):
                 selected_demo = demo_img
 
     if selected_demo is not None:
