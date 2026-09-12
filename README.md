@@ -2,11 +2,14 @@
 
 ### *Continuous Live Facial Tracking, Multi-Subject Inspection & Algorithmic Fairness Auditing*
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://fairvision-realtime-classifier.streamlit.app/)
 [![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0%2B-EE4C2C.svg?style=for-the-badge&logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.30%2B-FF4B4B.svg?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![OpenCV](https://img.shields.io/badge/OpenCV-4.10%2B-5C3EE8.svg?style=for-the-badge&logo=opencv&logoColor=white)](https://opencv.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-10B981.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+
+### 🚀 **Live Demo:** [https://fairvision-realtime-classifier.streamlit.app/](https://fairvision-realtime-classifier.streamlit.app/)
 
 </div>
 
@@ -89,6 +92,8 @@ To prevent algorithmic drift toward majority demographics, the training profile 
 ---
 
 ## 🚀 Getting Started & Installation
+
+> 🌐 **Try the Live Cloud Application directly:** [https://fairvision-realtime-classifier.streamlit.app/](https://fairvision-realtime-classifier.streamlit.app/)
 
 ### Prerequisites
 * Python 3.8 to 3.11
