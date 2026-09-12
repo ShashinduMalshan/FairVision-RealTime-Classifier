@@ -1,21 +1,30 @@
-# Python artifacts
+# Model Weights & Checkpoints (Auto-downloaded from Google Drive at runtime)
+FairVision.pt
+*.pt
+*.pth
+*.onnx
+*.bin
+*.h5
+*.pkl
+*.ckpt
+*.weights
+models/
+weights/
+
+# Python Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# Python artifacts & Caches
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-
-# Virtual Environment
-.venv/
-env/
-venv/
-ENV/
-
-# Model Checkpoints (Auto-downloaded by app.py from Google Drive)
-*.pt
-*.pth
-*.onnx
-*.bin
+.ipynb_checkpoints/
 
 # Environment & IDE
 .env
@@ -25,6 +34,7 @@ ENV/
 *.swo
 .DS_Store
 
-# Temporary outputs
+# Temporary outputs & logs
 *.png.tmp
 annotated_output/
+*.log
