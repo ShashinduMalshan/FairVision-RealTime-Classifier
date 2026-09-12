@@ -1,17 +1,3 @@
----
-title: FairVision RealTime Classifier
-emoji: 👁️
-colorFrom: indigo
-colorTo: purple
-sdk: streamlit
-python_version: "3.11"
-app_file: app.py
-pinned: false
-license: mit
----
-
-<div align="center">
-
 # 👁️ FairVision: Real-Time Bias-Mitigated Age Group Classifier
 
 ### *Continuous Live Facial Tracking, Multi-Subject Inspection & Algorithmic Fairness Auditing*
